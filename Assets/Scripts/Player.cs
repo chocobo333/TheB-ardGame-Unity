@@ -1,21 +1,25 @@
 
 using System;
 using Cysharp.Threading.Tasks;
+using Unity.Mathematics;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Serialization;
 
 public class Player : NetworkBehaviour
 {
     private GameManager gameManager;
-    [SerializeField] private GameObject DiscPrefab;
+    [SerializeField] private GameObject discPrefab;
     
     private PlayerInput _input;
 
     private bool charging = false;
     private bool fired = false;
     private float power = 0;
+    private Vector3 dir = new();
 
     private NetworkVariable<NetworkObjectReference> focusdDisc = new NetworkVariable<NetworkObjectReference>();
     
@@ -115,6 +119,10 @@ public class Player : NetworkBehaviour
         if (IsOwner)
         {
             Debug.Log($"I'm player {NetworkManager.Singleton.LocalClientId} {NetworkObjectId} and fire stop");
+            
+            var ray = Camera.main!.ScreenPointToRay(Mouse.current.position.value);
+            dir = Quaternion.Euler(Math.Sign(transform.position.z) * 45, 0, 0) * ray.direction;
+            
             charging = false;
             fired = true;
         }
@@ -152,11 +160,15 @@ public class Player : NetworkBehaviour
             if (focusdDisc.Value.TryGet(out var disc))
             {
                 var discComponent = disc.GetComponent<Disc>();
-                var dir = new Vector3(0, 0, (new Vector3(0, 0, 0) - transform.position).z);
+                // var dir = new Vector3(0, 0, -transform.position.z);
                 discComponent.Fire(dir, power);
+                
+                await UniTask.WaitUntil(() => discComponent.Speed() > 0);
+                await UniTask.WaitUntil(() => discComponent.beDestoryed || discComponent.Speed() < Single.Epsilon);
             }
             
             _input.enabled = false;
+            gameManager.FlipDisc(focusdDisc.Value);
             gameManager.FlipTurn();
         }
     }
@@ -166,7 +178,7 @@ public class Player : NetworkBehaviour
     {
         var isWhite = gameManager.isWhiteTurn.Value;
         var disc = Instantiate(
-            DiscPrefab,
+            discPrefab,
             transform.position,
             Quaternion.Euler(isWhite? 0 : 180, 0, 0)
         );

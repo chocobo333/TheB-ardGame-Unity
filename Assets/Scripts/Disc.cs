@@ -1,9 +1,12 @@
+using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
 
 public class Disc : NetworkBehaviour
 {
     Rigidbody rb;
+
+    public bool beDestoryed = false;
 
     void Awake()
     {
@@ -18,7 +21,19 @@ public class Disc : NetworkBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        if (transform.position.y < -10)
+        {
+            DelayedDestory(20).Forget();
+            return;
+        }
+    }
+
+    async UniTask DelayedDestory(int frames)
+    {
+        gameObject.SetActive(false);
+        beDestoryed = true;
+        await UniTask.DelayFrame(frames);
+        Destroy(gameObject);
     }
 
     public void Fire(Vector3 dir, float power)
@@ -32,5 +47,10 @@ public class Disc : NetworkBehaviour
         dir = dir.normalized;
         rb.isKinematic = false;
         rb.AddForce(dir * power, ForceMode.Impulse);
+    }
+
+    public float Speed()
+    {
+        return rb.linearVelocity.magnitude;
     }
 }

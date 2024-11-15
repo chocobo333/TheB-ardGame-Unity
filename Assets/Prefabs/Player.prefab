@@ -72,7 +72,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  DiscPrefab: {fileID: 3636416587598098531, guid: 934f6cc8962ab394590d38b53773130d, type: 3}
+  discPrefab: {fileID: 3636416587598098531, guid: 934f6cc8962ab394590d38b53773130d, type: 3}
 --- !u!114 &3578773414365662878
 MonoBehaviour:
   m_ObjectHideFlags: 0
